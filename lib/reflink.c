@@ -99,8 +99,20 @@ RmLinkType rm_reflink_type_from_fd(int fd1, int fd2) {
 
         RmOff physical_1 = rm_offset_get_from_fd(fd1, logical_current, &logical_next_1,
                                                  &logical_1, &is_last_1, &is_inline_1);
+        if (physical_1 == (RmOff)-1 && errno == EOPNOTSUPP) {
+#if _RM_OFFSET_DEBUG
+            rm_log_debug_line("FIEMAP not supported, can't determine whether files are clones");
+#endif
+            return RM_LINK_MAYBE_REFLINK;
+        }
         RmOff physical_2 = rm_offset_get_from_fd(fd2, logical_current, &logical_next_2,
                                                  &logical_2, &is_last_2, &is_inline_2);
+        if (physical_2 == (RmOff)-1 && errno == EOPNOTSUPP) {
+#if _RM_OFFSET_DEBUG
+            rm_log_debug_line("FIEMAP not supported, can't determine whether files are clones");
+#endif
+            return RM_LINK_MAYBE_REFLINK;
+        }
 
         if(is_last_1 != is_last_2) {
             return RM_LINK_NONE;
@@ -133,13 +145,6 @@ RmLinkType rm_reflink_type_from_fd(int fd1, int fd2) {
 
         if(is_inline_1 || is_inline_2) {
             return RM_LINK_INLINE_EXTENTS;
-        }
-
-        if(physical_1 == 0) {
-#if _RM_OFFSET_DEBUG
-            rm_log_debug_line("Can't determine whether files are clones");
-#endif
-            return RM_LINK_MAYBE_REFLINK;
         }
 
 #if _RM_OFFSET_DEBUG
