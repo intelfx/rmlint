@@ -836,6 +836,19 @@ static void rm_shred_group_finalise(RmShredGroup *self) {
     }
 }
 
+/* call unlocked, because yolo */
+static void rm_shred_group_maybe_finalise(RmShredGroup *self) {
+
+    switch(self->status) {
+    case RM_SHRED_GROUP_START_HASHING:
+    case RM_SHRED_GROUP_HASHING:
+        /* if called from rm_shred_process_group(), leave unfinished groups alone */
+        return;
+    }
+
+    return rm_shred_group_finalise(self);
+}
+
 /* Checks whether group qualifies as duplicate candidate (ie more than
  * two members and meets has_pref and NEEDS_PREF criteria).
  * Assume group already protected by group_lock.
@@ -1179,7 +1192,7 @@ static void rm_shred_process_group(GSList *files, _UNUSED RmShredTag *main) {
         rm_shred_file_preprocess(file, &group);
         if(all_have_ext_cksums) {
             /* only one cluster per RmShredGroup */
-            rm_shred_group_finalise(group);
+            rm_shred_group_maybe_finalise(group);
             group = NULL;
         }
     }
