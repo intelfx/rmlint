@@ -12,7 +12,7 @@ from rm_build_support import ConfigHeaderBuilder, EmbedPayloadBuilder
 
 ENV_KEYS = (
     # libraries
-    'HAVE_LIBELF', 'HAVE_GIO_UNIX', 'HAVE_BLKID', 'HAVE_LIBINTL',
+    'HAVE_LIBELF', 'HAVE_GIO_UNIX', 'HAVE_BLKID', 'HAVE_LIBMOUNT', 'HAVE_LIBINTL',
     # headers
     'HAVE_LINUX_LIMITS', 'HAVE_LINUX_FS_H', 'HAVE_BTRFS_H', 'HAVE_SYSMACROS_H',
     # syscalls / filesystem features
