@@ -39,6 +39,8 @@
 /* check that _FILE_OFFSET_BITS=64 is well understood. */
 G_STATIC_ASSERT(sizeof(RmOff) == sizeof(off_t));
 
+struct libmnt_table;
+
 /* return values for rm_util_link_type */
 typedef enum RmLinkType {
     RM_LINK_REFLINK         = EXIT_SUCCESS,
@@ -319,6 +321,7 @@ typedef struct RmMountTable {
     GHashTable *nfs_table;
     GHashTable *evilfs_table;
     GHashTable *reflinkfs_table;
+    struct libmnt_table *mount_table;
 } RmMountTable;
 
 /**
@@ -394,7 +397,7 @@ RmOff rm_offset_get_from_fd(int fd, RmOff file_offset, RmOff *file_offset_next,
  * @return the physical offset starting from the disk.
  */
 RmOff rm_offset_get_from_path(const char *path, RmOff file_offset,
-                              RmOff *file_offset_next);
+                              RmOff *file_offset_next, bool *is_last, bool *is_inline);
 
 /**
  * @brief Test if two files have identical fiemaps.
