@@ -223,10 +223,15 @@ static const RmShOrderEmitFunc ORDER_TO_FUNC[] = {
     [RM_SH_HANDLER_REMOVE] = rm_sh_emit_handler_remove
 };
 
-static void rm_sh_warn_if_reflink_not_compiled_in(void) {
+static gpointer rm_sh_warn_if_reflink_noop(RmFmtHandlerShScript *self) {
 #if !HAVE_BLKID || !HAVE_GIO_UNIX
-    g_printerr("\n%sWARNING:%s reflink will not be emitted: please compile with blkid and gio-unix-2.0.\n", YELLOW, RESET);
+    rm_log_warning_line(_("reflink will not be emitted: please compile with blkid and gio-unix-2.0."));
+#else
+    if(self->session->mounts == NULL) {
+        rm_log_warning_line(_("reflink will not be emitted becayse the mount table could not be read."));
+    }
 #endif
+    return NULL;
 }
 
 static void rm_sh_parse_handlers(RmFmtHandlerShScript *self, const char *handler_cfg) {
@@ -248,11 +253,11 @@ static void rm_sh_parse_handlers(RmFmtHandlerShScript *self, const char *handler
                     break;
                 case RM_SH_HANDLER_CLONE:
                     self->allow_clone = true;
-                    g_once(&log_once, (GThreadFunc)rm_sh_warn_if_reflink_not_compiled_in, NULL);
+                    g_once(&log_once, (GThreadFunc)rm_sh_warn_if_reflink_noop, self);
                     break;
                 case RM_SH_HANDLER_REFLINK:
                     self->allow_reflink = true;
-                    g_once(&log_once, (GThreadFunc)rm_sh_warn_if_reflink_not_compiled_in, NULL);
+                    g_once(&log_once, (GThreadFunc)rm_sh_warn_if_reflink_noop, self);
                     break;
                 case RM_SH_HANDLER_SYMLINK:
                     self->allow_symlink = true;
