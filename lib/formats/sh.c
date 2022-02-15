@@ -99,8 +99,10 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
     int link_type = rm_util_link_type(dupe_path, orig_path, TRUE);
     switch(link_type) {
     case RM_LINK_REFLINK:
-    case RM_LINK_INLINE_EXTENTS:
         *out = g_strdup_printf("skip_reflink  '%s' '%s'", dupe_escaped, orig_escaped);
+        return TRUE;
+    case RM_LINK_INLINE_EXTENTS:
+        *out = g_strdup_printf("skip_inline  '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
     case RM_LINK_SAME_FILE:
     case RM_LINK_NOT_FILE:
@@ -136,6 +138,9 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_REFLINK:
         *out = g_strdup_printf("skip_reflink  '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
+    case RM_LINK_INLINE_EXTENTS:
+        *out = g_strdup_printf("skip_inline  '%s' '%s'", dupe_escaped, orig_escaped);
+        return TRUE;
     case RM_LINK_SAME_FILE:
     case RM_LINK_NOT_FILE:
     case RM_LINK_WRONG_SIZE:
@@ -147,7 +152,6 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_HARDLINK:
     case RM_LINK_SYMLINK:
     case RM_LINK_MAYBE_REFLINK:
-    case RM_LINK_INLINE_EXTENTS:
     case RM_LINK_NONE:
         *out = g_strdup_printf("cp_reflink    '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
