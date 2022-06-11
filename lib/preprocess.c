@@ -328,6 +328,7 @@ void rm_preprocess(RmSession *session) {
      * appropriate list in session->tables->other_lint */
     removed += rm_util_queue_foreach_remove(
             all_files, (RmRFunc)rm_pp_sift_other_lint, session);
+    removed -= session->traversed_folders; /* these aren't counted in total_files */
 
     /* bundle (or free) hardlinks */
     removed += rm_pp_bundle_hardlinks(session, all_files);
