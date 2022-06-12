@@ -55,6 +55,7 @@ typedef enum RmLinkType {
     RM_LINK_XDEV            = 10,
     RM_LINK_ERROR           = 11,
     RM_LINK_INLINE_EXTENTS  = 12,
+    RM_LINK_BOTH_EMPTY      = 13,
 } RmLinkType;
 
 typedef struct stat RmStat;

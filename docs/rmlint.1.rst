@@ -894,6 +894,7 @@ OTHER STAND-ALONE COMMANDS
     * 10: Files are on different devices
     * 11: An error occurred during checking
     * 12: Files have inline extents
+    * 13: Both files are empty
 
 
 EXAMPLES
