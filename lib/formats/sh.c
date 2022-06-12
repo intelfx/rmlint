@@ -109,6 +109,7 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
     case RM_LINK_ERROR:
     case RM_LINK_XDEV:
     case RM_LINK_SYMLINK:
+    case RM_LINK_BOTH_EMPTY:
         rm_log_warning_line("Unexpected return code %d from rm_util_link_type()", link_type);
         return FALSE;
     case RM_LINK_HARDLINK:
@@ -145,6 +146,7 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_PATH_DOUBLE:
     case RM_LINK_XDEV:
     case RM_LINK_ERROR:
+    case RM_LINK_BOTH_EMPTY:
         rm_log_warning_line("Unexpected return code %d from rm_util_link_type()", link_type);
         return FALSE;
     case RM_LINK_HARDLINK:
