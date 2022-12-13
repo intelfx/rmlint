@@ -146,6 +146,9 @@ typedef struct RmFile {
      */
     const char *ext_cksum;
 
+    /* multi-disk scheduler disk link */
+    struct _RmMDSDevice *disk;
+
     /* file path as node of folder n-ary tree
      * */
     RmNode *node;
@@ -250,12 +253,6 @@ typedef struct RmFile {
 
     /* File hashing failed (probably read error or user interrupt) */
     bool hashing_failed : 1;
-
-    /* is on a spinning disk medium */
-    bool is_on_rotational_disk : 1;
-
-    /* true if mds disk needs unref */
-    bool has_disk_ref : 1;
 
 } RmFile;
 
