@@ -453,6 +453,10 @@ SetOption('num_jobs', get_cpu_count())
 
 print(f"Running with --jobs={GetOption('num_jobs')}")
 
+env.Tool('compilation_db')
+env.CompilationDatabase('compile_commands.json')
+env.Default('compile_commands.json')
+
 library = SConscript('lib/SConscript')
 program = SConscript('src/SConscript', exports='library')
 env.Default(library)
