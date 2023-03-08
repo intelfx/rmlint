@@ -890,6 +890,15 @@ static void rm_shred_group_make_orphan(RmShredGroup *self) {
     }
 }
 
+static gint rm_update_shred_group_unique_basename(RmFile *file, RmShredGroup *shred_group)
+{
+    if(shred_group->unique_basename &&
+       rm_rank_basenames(file, shred_group->unique_basename) != 0) {
+        shred_group->unique_basename = NULL;
+    }
+    return 0;
+}
+
 static gint rm_update_shred_group_unique_directory(RmFile *file, RmShredGroup *shred_group)
 {
     if (file->node->parent != shred_group->unique_directory->node->parent) {
@@ -917,18 +926,9 @@ static RmFile *rm_shred_group_push_file(RmShredGroup *shred_group, RmFile *file,
             /* do some fancy footwork for cfg->unmatched_basenames criterion */
             if(shred_group->num_files == 0) {
                 shred_group->unique_basename = file;
-            } else if(shred_group->unique_basename &&
-                      rm_rank_basenames(file, shred_group->unique_basename) != 0) {
-                shred_group->unique_basename = NULL;
             }
-            if(shred_group->unique_basename && file->cluster) {
-                for(GList *iter = file->cluster->head; iter; iter = iter->next) {
-                    if(rm_rank_basenames(iter->data, shred_group->unique_basename) !=
-                       0) {
-                        shred_group->unique_basename = NULL;
-                        break;
-                    }
-                }
+            if (shred_group->unique_basename != NULL) {
+                rm_file_foreach(file, (RmRFunc)&rm_update_shred_group_unique_basename, shred_group);
             }
         }
 
