@@ -865,6 +865,10 @@ SetOption('num_jobs', get_cpu_count())
 
 print ("Running with --jobs=" + repr(GetOption('num_jobs')))
 
+env.Tool('compilation_db')
+env.CompilationDatabase('compile_commands.json')
+env.Default('compile_commands.json')
+
 library = SConscript('lib/SConscript')
 programs = SConscript('src/SConscript', exports='library')
 env.Default(library)
@@ -873,7 +877,6 @@ SConscript('tests/SConscript', exports='programs')
 SConscript('po/SConscript')
 SConscript('docs/SConscript')
 SConscript('gui/SConscript')
-
 
 def build_tar_gz(target=None, source=None, env=None):
     tarball = 'rmlint-{a}.{b}.{c}.tar.gz'.format(

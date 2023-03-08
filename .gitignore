@@ -18,6 +18,7 @@ docs/rmlint.1
 .rope*
 *.pyc
 
+compile_commands.json
 docs/_build
 __pycache__
 
