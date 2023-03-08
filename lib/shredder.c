@@ -909,7 +909,7 @@ static RmFile *rm_shred_group_push_file(RmShredGroup *shred_group, RmFile *file,
                       rm_rank_basenames(file, shred_group->unique_basename) != 0) {
                 shred_group->unique_basename = NULL;
             }
-            if(file->cluster) {
+            if(shred_group->unique_basename && file->cluster) {
                 for(GList *iter = file->cluster->head; iter; iter = iter->next) {
                     if(rm_rank_basenames(iter->data, shred_group->unique_basename) !=
                        0) {
