@@ -379,6 +379,9 @@ typedef struct RmShredGroup {
     /* if whole group has same basename, pointer to first file, else null */
     RmFile *unique_basename;
 
+    /* if all names in the group have the same directory, pointer to first file, else null */
+    RmFile *unique_directory;
+
     /* initially RM_SHRED_GROUP_DORMANT; triggered as soon as we have >= 2 files
      * and meet preferred path and will go to either RM_SHRED_GROUP_HASHING or
      * RM_SHRED_GROUP_FINISHING.  When switching from dormant to hashing, all
@@ -863,6 +866,7 @@ static void rm_shred_group_update_status(RmShredGroup *group) {
               group->session->cfg->merge_directories) {
         /* special case of hardlinked files that still need hashing to help identify
          * matching directories */
+        /* TODO: maybe do not hash hardlinked files that are in the same directory? */
         group->status = RM_SHRED_GROUP_START_HASHING;
     } else if(group->session->cfg->hash_unmatched && group->digest) {
         // with hash_unmatched, keep going once we start
@@ -885,6 +889,14 @@ static void rm_shred_group_make_orphan(RmShredGroup *self) {
     if(group_finished) {
         rm_shred_group_finalise(self);
     }
+}
+
+static gint rm_update_shred_group_unique_directory(RmFile *file, RmShredGroup *shred_group)
+{
+    if (file->node->parent != shred_group->unique_directory->node->parent) {
+        shred_group->unique_directory = NULL;
+    }
+    return 0;
 }
 
 /* Call with shred_group->lock unlocked. */
@@ -918,6 +930,15 @@ static RmFile *rm_shred_group_push_file(RmShredGroup *shred_group, RmFile *file,
                     }
                 }
             }
+        }
+
+        /* same as above, but for unique directories */
+        if (shred_group->num_files == 0) {
+            g_assert_nonnull(file->node);
+            shred_group->unique_directory = file;
+        }
+        if (shred_group->unique_directory != NULL) {
+            rm_file_foreach(file, (RmRFunc)&rm_update_shred_group_unique_directory, shred_group);
         }
 
         /* update group counters */
