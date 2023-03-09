@@ -895,6 +895,7 @@ OTHER STAND-ALONE COMMANDS
     * 11: An error occurred during checking
     * 12: Files have inline extents
     * 13: Both files are empty
+    * 14: Both files are directories
 
 
 EXAMPLES
