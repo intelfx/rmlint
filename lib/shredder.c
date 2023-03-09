@@ -1425,11 +1425,30 @@ static RmShredGroup *rm_shred_mtime_rejects(RmShredGroup *group, RmShredTag *tag
     return rejects;
 }
 
+struct RmRejects
+{
+    RmShredGroup *group;
+    RmShredGroup *rejects;
+};
+
+static gint rm_shred_basename_rejects_two(RmFile *file, RmShredGroup *group) {
+    RmFile *headfile = group->held_files->head->data;
+    if (rm_rank_basenames(file, headfile) == 0) {
+
+    }
+}
+
+static void rm_shred_basename_rejects_one(RmFile *file, RmShredGroup *group) {
+    rm_file_foreach(file, (RmRFunc)&rm_shred_basename_rejects_two, group);
+}
+
 static RmShredGroup *rm_shred_basename_rejects(RmShredGroup *group, RmShredTag *tag) {
     RmShredGroup *rejects = NULL;
     if(tag->session->cfg->unmatched_basenames &&
        group->status == RM_SHRED_GROUP_FINISHING) {
         /* remove files which match headfile's basename */
+        g_queue_foreach(group->held_files, (GFunc)&rm_shred_basename_rejects_one, group);
+
         RmFile *headfile = group->held_files->head->data;
         for(GList *iter = group->held_files->head->next, *next = NULL; iter;
             iter = next) {
