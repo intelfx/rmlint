@@ -778,8 +778,10 @@ conf.env.Append(CCFLAGS=['-Werror=undef'])
 
 
 if ARGUMENTS.get('GDB') == '1':
+    print("Enabling all debug options")
     ARGUMENTS['DEBUG'] = '1'
     ARGUMENTS['SYMBOLS'] = '1'
+    ARGUMENTS['COREDUMP'] = '1'
 
 O_DEBUG   = 'g' # The optimisation level for a debug   build
 O_RELEASE = '2' # The optimisation level for a release build
@@ -803,6 +805,10 @@ cc_O_option = '-O' + O_value
 
 print("Using compiler optimisation {} (to change, run scons with O=[0|1|2|3|s|fast])".format(cc_O_option))
 conf.env.Append(CCFLAGS=[cc_O_option])
+
+if ARGUMENTS.get('COREDUMP') == "1":
+    print("Disabling fatal signal handlers")
+    conf.env.Append(CCFLAGS=['-DRM_COREDUMP'])
 
 if ARGUMENTS.get('SYMBOLS') == '1':
     print("Compiling with debugging symbols")
