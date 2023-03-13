@@ -1372,10 +1372,10 @@ RmLinkType rm_util_link_type(const char *path1, const char *path2, bool use_fiem
     }
 
 #define RM_RETURN(value)   \
-    {                      \
+    do {                   \
         rm_sys_close(fd1); \
         return (value);    \
-    }
+    } while(0)
 
     RmStat stat1;
     int stat_state = rm_sys_lstat(path1, &stat1);
@@ -1396,11 +1396,11 @@ RmLinkType rm_util_link_type(const char *path1, const char *path2, bool use_fiem
 
 #undef RM_RETURN
 #define RM_RETURN(value)   \
-    {                      \
+    do {                   \
         rm_sys_close(fd1); \
         rm_sys_close(fd2); \
         return (value);    \
-    }
+    } while(0)
 
     RmStat stat2;
     stat_state = rm_sys_lstat(path2, &stat2);
