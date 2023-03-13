@@ -1365,15 +1365,9 @@ RmLinkType rm_util_link_type(const char *path1, const char *path2, bool use_fiem
 #if _RM_OFFSET_DEBUG
     rm_log_debug_line("Checking link type for %s vs %s", path1, path2);
 #endif
-    int fd1 = rm_sys_open(path1, O_RDONLY);
-    if(fd1 == -1) {
-        rm_log_perrorf("rm_util_link_type: Error opening %s", path1);
-        return RM_LINK_ERROR;
-    }
 
 #define RM_RETURN(value)   \
     do {                   \
-        rm_sys_close(fd1); \
         return (value);    \
     } while(0)
 
@@ -1387,20 +1381,6 @@ RmLinkType rm_util_link_type(const char *path1, const char *path2, bool use_fiem
     if(!S_ISREG(stat1.st_mode)) {
         RM_RETURN(S_ISLNK(stat1.st_mode) ? RM_LINK_SYMLINK : RM_LINK_NOT_FILE);
     }
-
-    int fd2 = rm_sys_open(path2, O_RDONLY);
-    if(fd2 == -1) {
-        rm_log_perrorf("rm_util_link_type: Error opening %s", path2);
-        RM_RETURN(RM_LINK_ERROR);
-    }
-
-#undef RM_RETURN
-#define RM_RETURN(value)   \
-    do {                   \
-        rm_sys_close(fd1); \
-        rm_sys_close(fd2); \
-        return (value);    \
-    } while(0)
 
     RmStat stat2;
     stat_state = rm_sys_lstat(path2, &stat2);
@@ -1445,6 +1425,38 @@ RmLinkType rm_util_link_type(const char *path1, const char *path2, bool use_fiem
             RM_RETURN(RM_LINK_XDEV);
         }
     }
+
+    if(!use_fiemap) {
+        /* if we are not doing FIEMAP, opening the files is pointless */
+        RM_RETURN(RM_LINK_NONE);
+    }
+
+    int fd1 = rm_sys_open(path1, O_RDONLY);
+    if(fd1 == -1) {
+        rm_log_perrorf("rm_util_link_type: Error opening %s", path1);
+        return RM_LINK_ERROR;
+    }
+
+#undef RM_RETURN
+#define RM_RETURN(value)   \
+    do {                   \
+        rm_sys_close(fd1); \
+        return (value);    \
+    } while(0)
+
+    int fd2 = rm_sys_open(path2, O_RDONLY);
+    if(fd2 == -1) {
+        rm_log_perrorf("rm_util_link_type: Error opening %s", path2);
+        RM_RETURN(RM_LINK_ERROR);
+    }
+
+#undef RM_RETURN
+#define RM_RETURN(value)   \
+    do {                   \
+        rm_sys_close(fd1); \
+        rm_sys_close(fd2); \
+        return (value);    \
+    } while(0)
 
     if(use_fiemap) {
         RmLinkType reflink_type = rm_reflink_type_from_fd(fd1, fd2);
