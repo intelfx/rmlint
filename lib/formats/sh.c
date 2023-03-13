@@ -94,7 +94,7 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
         return false;
     }
 
-    int link_type = rm_util_link_type(dupe_path, orig_path, TRUE);
+    int link_type = rm_util_link_type(dupe_path, orig_path, self->session->cfg->build_fiemap);
     switch(link_type) {
     case RM_LINK_REFLINK:
         *out = g_strdup_printf("skip_reflink  '%s' '%s'", dupe_escaped, orig_escaped);
@@ -133,7 +133,7 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
         return false;
     }
 
-    int link_type = rm_util_link_type(dupe_path, orig_path, TRUE);
+    int link_type = rm_util_link_type(dupe_path, orig_path, self->session->cfg->build_fiemap);
     switch(link_type) {
     case RM_LINK_REFLINK:
         *out = g_strdup_printf("skip_reflink  '%s' '%s'", dupe_escaped, orig_escaped);
