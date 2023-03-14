@@ -1492,6 +1492,28 @@ const char **rm_link_type_to_desc(void) {
     return RM_LINK_TYPE_TO_DESC;
 }
 
+const char **rm_link_type_to_name() {
+#define ITEM(name) \
+        [name] = #name,
+    static const char *RM_LINK_TYPE_TO_NAME[] = {
+        ITEM(RM_LINK_REFLINK)
+        ITEM(RM_LINK_ERROR)
+        ITEM(RM_LINK_NOT_FILE)
+        ITEM(RM_LINK_WRONG_SIZE)
+        ITEM(RM_LINK_INLINE_EXTENTS)
+        ITEM(RM_LINK_SAME_FILE)
+        ITEM(RM_LINK_PATH_DOUBLE)
+        ITEM(RM_LINK_HARDLINK)
+        ITEM(RM_LINK_SYMLINK)
+        ITEM(RM_LINK_XDEV)
+        ITEM(RM_LINK_NONE)
+        ITEM(RM_LINK_BOTH_EMPTY)
+        ITEM(RM_LINK_DIR)
+    };
+#undef ITEM
+    return RM_LINK_TYPE_TO_NAME;
+}
+
 /////////////////////////////////
 //  GTHREADPOOL WRAPPERS       //
 /////////////////////////////////

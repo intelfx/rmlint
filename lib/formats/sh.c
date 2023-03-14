@@ -72,6 +72,14 @@ static bool rm_sh_emit_handler_user(RmFmtHandlerShScript *self, char **out, _UNU
     return true;
 }
 
+
+static void rm_sh_link_unexpected(RmLinkType result, const char *orig, const char *dupe)
+{
+
+    rm_log_warning_line("Unexpected rm_util_link_type(): %s (orig=%s, dupe=%s)",
+        rm_link_type_to_name()[result], orig, dupe);
+}
+
 static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmFile *file, char *dupe_path, char *orig_path, char *dupe_escaped, char *orig_escaped) {
     if(!self->allow_clone || self->session->mounts == NULL) {
         return false;
@@ -103,7 +111,7 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
     case RM_LINK_SYMLINK:
     case RM_LINK_BOTH_EMPTY:
     case RM_LINK_DIR:
-        rm_log_warning_line("Unexpected return code %d from rm_util_link_type()", link_type);
+        rm_sh_link_unexpected(link_type, orig_path, dupe_path);
         return FALSE;
     case RM_LINK_HARDLINK:
     case RM_LINK_MAYBE_REFLINK: /* delalloc extents; the dedupe ioctl handles them */
@@ -140,7 +148,7 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_XDEV:
     case RM_LINK_ERROR:
     case RM_LINK_BOTH_EMPTY:
-        rm_log_warning_line("Unexpected return code %d from rm_util_link_type()", link_type);
+        rm_sh_link_unexpected(link_type, orig_path, dupe_path);
         return FALSE;
     case RM_LINK_HARDLINK:
     case RM_LINK_SYMLINK:
