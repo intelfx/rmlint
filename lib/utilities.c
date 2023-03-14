@@ -1435,7 +1435,7 @@ RmLinkType rm_util_link_type(const char *path1, const char *path2, bool use_fiem
         RM_RETURN(RM_LINK_WRONG_SIZE);
     }
 
-    if (stat1.st_size == 0) {
+    if (!is_dir && stat1.st_size == 0) {
         RM_RETURN(RM_LINK_BOTH_EMPTY);
     }
 
