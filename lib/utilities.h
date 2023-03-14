@@ -413,6 +413,13 @@ RmLinkType rm_util_link_type(const char *path1, const char *path2, bool use_fiem
  */
 const char **rm_link_type_to_desc(void);
 
+
+/**
+ * @brief Map RmLinkType to literal name.
+ * @retval Array of names.
+ */
+const char **rm_link_type_to_name(void);
+
 //////////////////////////////
 //    TIMESTAMP HELPERS     //
 //////////////////////////////
