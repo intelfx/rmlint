@@ -226,7 +226,7 @@ cp_hardlink() {
 
 cp_reflink() {
     print_progress_prefix
-    # reflink $1 to $2's data, preserving $1's  mtime
+    # reflink $1 to $2's data, preserving $1's mtime
     printf "${COL_YELLOW}Reflinking to original: ${COL_RESET}%%s\n" "$1"
     if original_check "$1" "$2"; then
         if [ -z "$DO_DRY_RUN" ]; then
