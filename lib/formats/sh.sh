@@ -226,12 +226,15 @@ cp_hardlink() {
 
 cp_reflink() {
     print_progress_prefix
-    # reflink $1 to $2's data, preserving $1's  mtime
+    # reflink $1 to $2's data, preserving $1's mtime
     printf "${COL_YELLOW}Reflinking to original: ${COL_RESET}%%s\n" "$1"
     if original_check "$1" "$2"; then
         if [ -z "$DO_DRY_RUN" ]; then
             if [ -d "$1" ]; then
-                local STAMPFILE2="$(mktemp -d "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp.d")"
+                # local is not POSIX, but still ubiquitous (ash, ksh, dash all support it)
+                # shellcheck disable=SC2039
+                local STAMPFILE2
+                STAMPFILE2="$(mktemp -d "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp.d")"
             elif [ -z "$STAMPFILE2" ]; then
                 STAMPFILE2=$(mktemp "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp")
             fi
