@@ -183,19 +183,27 @@ original_check() {
 }
 
 cp_symlink() {
+    # symlink $1 to $2, preserving $1's mtime
     print_progress_prefix
     printf "${COL_YELLOW}Symlinking to original: ${COL_RESET}%%s\n" "$1"
     if original_check "$1" "$2"; then
         if [ -z "$DO_DRY_RUN" ]; then
+            if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                touch -r "$(dirname "$1")" -- "$STAMPFILE"
+            fi
             # replace duplicate with symlink
             mv -- "$1" "$1.temp"
-            if ln -s "$2" "$1"; then
+            if ln -s -- "$2" "$1"; then
                 # make the symlink's mtime the same as the original
-                touch -mr "$2" -h "$1"
+                touch -mr "$1.temp" -h -- "$1"
                 rm -rf -- "$1.temp"
             else
                # Failed to link file, move back:
                 mv -- "$1.temp" "$1"
+            fi
+            if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                # restore parent mtime if we saved it
+                touch -r "$STAMPFILE" -- "$(dirname "$1")"
             fi
         fi
     fi
