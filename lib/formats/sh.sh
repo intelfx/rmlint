@@ -220,6 +220,9 @@ cp_hardlink() {
     printf "${COL_YELLOW}Hardlinking to original: ${COL_RESET}%%s\n" "$1"
     if original_check "$1" "$2"; then
         if [ -z "$DO_DRY_RUN" ]; then
+            if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                touch -r "$(dirname "$1")" -- "$STAMPFILE"
+            fi
             # replace duplicate with hardlink
             mv -- "$1" "$1.temp"
             if ln "$2" "$1"; then
@@ -227,6 +230,10 @@ cp_hardlink() {
             else
                # Failed to link file, move back:
                 mv -- "$1.temp" "$1"
+            fi
+            if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                # restore parent mtime if we saved it
+                touch -r "$STAMPFILE" -- "$(dirname "$1")"
             fi
         fi
     fi
