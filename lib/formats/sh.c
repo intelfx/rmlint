@@ -108,9 +108,9 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
     case RM_LINK_SYMLINK:
     case RM_LINK_BOTH_EMPTY:
     case RM_LINK_DIR:
+    case RM_LINK_HARDLINK:
         rm_sh_link_unexpected(link_type, orig_path, dupe_path);
         return FALSE;
-    case RM_LINK_HARDLINK:
     case RM_LINK_MAYBE_REFLINK: /* delalloc extents; the dedupe ioctl handles them */
     case RM_LINK_INLINE_EXTENTS: /* XXX skipping this is wrong, because inline tails would prevent reflinking */
     case RM_LINK_NONE:
@@ -143,10 +143,10 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_XDEV:
     case RM_LINK_ERROR:
     case RM_LINK_BOTH_EMPTY:
-        rm_sh_link_unexpected(link_type, orig_path, dupe_path);
-        return FALSE;
     case RM_LINK_HARDLINK:
     case RM_LINK_SYMLINK:
+        rm_sh_link_unexpected(link_type, orig_path, dupe_path);
+        return FALSE;
     case RM_LINK_MAYBE_REFLINK:
     case RM_LINK_INLINE_EXTENTS: /* XXX skipping this is wrong, because inline tails would prevent reflinking */
     case RM_LINK_DIR:
