@@ -253,7 +253,7 @@ cp_reflink() {
             elif [ -z "$STAMPFILE2" ]; then
                 STAMPFILE2=$(mktemp "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp")
             fi
-            cp --archive --attributes-only --no-target-directory -- "$1" "$STAMPFILE2"
+            cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$1" "$STAMPFILE2"
             if [ -d "$1" ]; then
                 # to reflink a directory, we will have to delete it, thus changing parent mtime
                 # take care of preserving parent mtime if requested
@@ -263,7 +263,7 @@ cp_reflink() {
                 rm -rf -- "$1"
             fi
             cp --archive --reflink=always -- "$2" "$1"
-            cp --archive --attributes-only --no-target-directory -- "$STAMPFILE2" "$1"
+            cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$STAMPFILE2" "$1"
             if [ -d "$1" ]; then
                 rm -rf -- "$STAMPFILE2"
                 if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
