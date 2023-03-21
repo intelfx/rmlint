@@ -99,9 +99,6 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
     case RM_LINK_REFLINK:
         *out = g_strdup_printf("skip_reflink  '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
-    case RM_LINK_INLINE_EXTENTS:
-        *out = g_strdup_printf("skip_inline  '%s' '%s'", dupe_escaped, orig_escaped);
-        return TRUE;
     case RM_LINK_SAME_FILE:
     case RM_LINK_NOT_FILE:
     case RM_LINK_WRONG_SIZE:
@@ -115,6 +112,7 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
         return FALSE;
     case RM_LINK_HARDLINK:
     case RM_LINK_MAYBE_REFLINK: /* delalloc extents; the dedupe ioctl handles them */
+    case RM_LINK_INLINE_EXTENTS: /* XXX skipping this is wrong, because inline tails would prevent reflinking */
     case RM_LINK_NONE:
         *out = g_strdup_printf("clone         '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
@@ -138,9 +136,6 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_REFLINK:
         *out = g_strdup_printf("skip_reflink  '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
-    case RM_LINK_INLINE_EXTENTS:
-        *out = g_strdup_printf("skip_inline  '%s' '%s'", dupe_escaped, orig_escaped);
-        return TRUE;
     case RM_LINK_SAME_FILE:
     case RM_LINK_NOT_FILE:
     case RM_LINK_WRONG_SIZE:
@@ -153,6 +148,7 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_HARDLINK:
     case RM_LINK_SYMLINK:
     case RM_LINK_MAYBE_REFLINK:
+    case RM_LINK_INLINE_EXTENTS: /* XXX skipping this is wrong, because inline tails would prevent reflinking */
     case RM_LINK_DIR:
     case RM_LINK_NONE:
         *out = g_strdup_printf("cp_reflink    '%s' '%s'", dupe_escaped, orig_escaped);
