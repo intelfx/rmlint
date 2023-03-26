@@ -44,6 +44,7 @@ DO_ASK_BEFORE_DELETE=
 # Tempfiles for saving timestamps
 STAMPFILE=
 STAMPFILE2=
+STAMPDIR2=
 
 ##################################
 # GENERAL LINT HANDLER FUNCTIONS #
@@ -62,6 +63,9 @@ exit_cleanup() {
     fi
     if [ -n "$STAMPFILE2" ]; then
         rm -f -- "$STAMPFILE2"
+    fi
+    if [ -n "$STAMPDIR2" ]; then
+        rm -rf -- "$STAMPDIR2"
     fi
 }
 
@@ -151,6 +155,24 @@ check_for_equality() {
     else
         # Fallback to `rmlint --equal` for directories:
         "$RMLINT_BINARY" -p --equal %s -- "$1" "$2"
+    fi
+}
+
+check_hierarchy() {
+    if [ -d "$1" -o -d "$2" ]; then
+        # XXX: %%P is because this script is used as a giant format string to printf()
+        _sum1="$(find "$1" -printf '%%P\n' | sort | sha256sum)"
+        _sum2="$(find "$2" -printf '%%P\n' | sort | sha256sum)"
+        [ "$_sum1" = "$_sum2" ]
+    else
+        return 0
+    fi
+}
+
+check_hierarchy_fail() {
+    if ! check_hierarchy "$1" "$2"; then
+        printf "${COL_RED}^^^^^^ Error: $1 and $2 directory hierarchies differ - cancelling.....${COL_RESET}\n"
+        return 1
     fi
 }
 
@@ -245,17 +267,43 @@ cp_reflink() {
     printf "${COL_YELLOW}Reflinking to original: ${COL_RESET}%%s\n" "$1"
     if original_check "$1" "$2"; then
         if [ -z "$DO_DRY_RUN" ]; then
-            if [ -d "$1" ]; then
-                # local is not POSIX, but still ubiquitous (ash, ksh, dash all support it)
-                # shellcheck disable=SC2039
-                local STAMPFILE2
-                STAMPFILE2="$(mktemp -d "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp.d")"
-            elif [ -z "$STAMPFILE2" ]; then
-                STAMPFILE2=$(mktemp "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp")
+            if [ -d "$1" ] && check_hierarchy "$1" "$2"; then
+                # Reflinking a directory with the same hierarchy. We can preserve the attributes of
+                # the files recursively by doing a `cp --attributes-only` to a temporary directory.
+                STAMPDIR2="$(mktemp -d "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp.d")"
+                cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$1" "$STAMPDIR2"
+                # $STAMPDIR2 will probably be on tmpfs, which does not support user xattrs.
+                # Thus, if the hierarchies are actually equal, we can simply skip deleting originals
+                # and let user xattrs stay in place throughout the whole operation.
+                cp -dR --reflink=always --no-preserve=xattr --no-target-directory -- "$2" "$1"
+                cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$STAMPDIR2" "$1"
+                rm -rf -- "$STAMPDIR2"
+                STAMPDIR2=
+                # In the same vein, we don't have to preserve the parent mtime because we never
+                # actually modify the parent directory.
+            elif [ -d "$1" ]; then
+                # Reflinking a directory, but the hierarchy is different (no `--honor-dir-layout`).
+                # We will have to delete the duplicate directory, thus changing parent mtime.
+                # Take care of preserving parent mtime if requested
+                if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                    touch -r "$(dirname "$1")" -- "$STAMPFILE"
+                fi
+                rm -rf -- "$1"
+                # The hierarchy is different, so there's no point preserving any of the attributes,
+                # if they're incompatible between the two, the situation is screwed anyway
+                cp --archive --reflink=always --no-preserve=xattr --no-target-directory -- "$2" "$1"
+                if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                    # restore parent mtime if we saved it
+                    touch -r "$STAMPFILE" -- "$(dirname "$1")"
+                fi
+            else
+                if [ -z "$STAMPFILE2" ]; then
+                    STAMPFILE2=$(mktemp "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp")
+                fi
+                cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$1" "$STAMPFILE2"
+                cp -dR --reflink=always --no-target-directory -- "$2" "$1"
+                cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$STAMPFILE2" "$1"
             fi
-            cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$1" "$STAMPFILE2"
-            cp -dR --reflink=always --no-target-directory -- "$2" "$1"
-            cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$STAMPFILE2" "$1"
         fi
     fi
 }
