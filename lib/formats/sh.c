@@ -99,13 +99,15 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
     case RM_LINK_REFLINK:
         *out = g_strdup_printf("skip_reflink  '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
+    case RM_LINK_HARDLINK:
+        *out = g_strdup_printf("skip_hardlink '%s' '%s'", dupe_escaped, orig_escaped);
+        return TRUE;
     case RM_LINK_SAME_FILE:
     case RM_LINK_NOT_FILE:
     case RM_LINK_WRONG_SIZE:
     case RM_LINK_PATH_DOUBLE:
     case RM_LINK_ERROR:
     case RM_LINK_XDEV:
-    case RM_LINK_HARDLINK:
     case RM_LINK_SYMLINK:
     case RM_LINK_BOTH_EMPTY:
     case RM_LINK_DIR:
@@ -136,6 +138,9 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_REFLINK:
         *out = g_strdup_printf("skip_reflink  '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
+    case RM_LINK_HARDLINK:
+        *out = g_strdup_printf("skip_hardlink '%s' '%s'", dupe_escaped, orig_escaped);
+        return TRUE;
     case RM_LINK_SAME_FILE:
     case RM_LINK_NOT_FILE:
     case RM_LINK_WRONG_SIZE:
@@ -143,7 +148,7 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_XDEV:
     case RM_LINK_ERROR:
     case RM_LINK_BOTH_EMPTY:
-    case RM_LINK_HARDLINK:
+    /* this will only happen with --see-symlinks, in which case there is nothing to do here */
     case RM_LINK_SYMLINK:
         rm_sh_link_unexpected(link_type, orig_path, dupe_path);
         return FALSE;
