@@ -810,8 +810,10 @@ conf.env.Append(CCFLAGS=['-Werror=undef'])
 conf.env.Append(CCFLAGS=['-Werror'])
 
 if ARGUMENTS.get('GDB') == '1':
+    print("Enabling all debug options")
     ARGUMENTS['DEBUG'] = '1'
     ARGUMENTS['SYMBOLS'] = '1'
+    ARGUMENTS['COREDUMP'] = '1'
 
 O_DEBUG   = 'g' # The optimisation level for a debug   build
 O_RELEASE = '2' # The optimisation level for a release build
@@ -835,6 +837,10 @@ cc_O_option = '-O' + O_value
 
 print("Using compiler optimisation {} (to change, run scons with O=[0|1|2|3|s|fast])".format(cc_O_option))
 conf.env.Append(CCFLAGS=[cc_O_option])
+
+if ARGUMENTS.get('COREDUMP') == "1":
+    print("Disabling fatal signal handlers")
+    conf.env.Append(CCFLAGS=['-DRM_COREDUMP'])
 
 if ARGUMENTS.get('SYMBOLS') == '1':
     print("Compiling with debugging symbols")
@@ -897,6 +903,10 @@ SetOption('num_jobs', get_cpu_count())
 
 print ("Running with --jobs=" + repr(GetOption('num_jobs')))
 
+env.Tool('compilation_db')
+env.CompilationDatabase('compile_commands.json')
+env.Default('compile_commands.json')
+
 library = SConscript('lib/SConscript')
 programs = SConscript('src/SConscript', exports='library')
 env.Default(library)
@@ -905,7 +915,6 @@ SConscript('tests/SConscript', exports='programs')
 SConscript('po/SConscript')
 SConscript('docs/SConscript')
 SConscript('gui/SConscript')
-
 
 def build_tar_gz(target=None, source=None, env=None):
     tarball = 'rmlint-{a}.{b}.{c}.tar.gz'.format(

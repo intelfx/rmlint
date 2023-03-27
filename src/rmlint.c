@@ -119,9 +119,11 @@ int main(int argc, const char **argv) {
     sa.sa_handler = signal_handler;
 
     sigaction(SIGINT, &sa, NULL);
+#ifndef RM_COREDUMP
     sigaction(SIGSEGV, &sa, NULL);
     sigaction(SIGFPE, &sa, NULL);
     sigaction(SIGABRT, &sa, NULL);
+#endif
 
     RmCfg cfg;
     rm_cfg_set_default(&cfg);
