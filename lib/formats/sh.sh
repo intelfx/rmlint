@@ -44,6 +44,7 @@ DO_ASK_BEFORE_DELETE=
 # Tempfiles for saving timestamps
 STAMPFILE=
 STAMPFILE2=
+STAMPDIR2=
 
 ##################################
 # GENERAL LINT HANDLER FUNCTIONS #
@@ -62,6 +63,9 @@ exit_cleanup() {
     fi
     if [ -n "$STAMPFILE2" ]; then
         rm -f -- "$STAMPFILE2"
+    fi
+    if [ -n "$STAMPDIR2" ]; then
+        rm -rf -- "$STAMPDIR2"
     fi
 }
 
@@ -154,6 +158,24 @@ check_for_equality() {
     fi
 }
 
+check_hierarchy() {
+    if [ -d "$1" -o -d "$2" ]; then
+        # XXX: %%P is because this script is used as a giant format string to printf()
+        _sum1="$(find "$1" -printf '%%P\n' | sort | sha256sum)"
+        _sum2="$(find "$2" -printf '%%P\n' | sort | sha256sum)"
+        [ "$_sum1" = "$_sum2" ]
+    else
+        return 0
+    fi
+}
+
+check_hierarchy_fail() {
+    if ! check_hierarchy "$1" "$2"; then
+        printf "${COL_RED}^^^^^^ Error: $1 and $2 directory hierarchies differ - cancelling.....${COL_RESET}\n"
+        return 1
+    fi
+}
+
 original_check() {
     if [ ! -e "$2" ]; then
         printf "${COL_RED}^^^^^^ Error: original has disappeared - cancelling.....${COL_RESET}\n"
@@ -183,19 +205,27 @@ original_check() {
 }
 
 cp_symlink() {
+    # symlink $1 to $2, preserving $1's mtime
     print_progress_prefix
     printf "${COL_YELLOW}Symlinking to original: ${COL_RESET}%%s\n" "$1"
     if original_check "$1" "$2"; then
         if [ -z "$DO_DRY_RUN" ]; then
+            if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                touch -r "$(dirname "$1")" -- "$STAMPFILE"
+            fi
             # replace duplicate with symlink
             mv -- "$1" "$1.temp"
-            if ln -s "$2" "$1"; then
+            if ln -s -- "$2" "$1"; then
                 # make the symlink's mtime the same as the original
-                touch -mr "$2" -h "$1"
+                touch -mr "$1.temp" -h -- "$1"
                 rm -rf -- "$1.temp"
             else
                # Failed to link file, move back:
                 mv -- "$1.temp" "$1"
+            fi
+            if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                # restore parent mtime if we saved it
+                touch -r "$STAMPFILE" -- "$(dirname "$1")"
             fi
         fi
     fi
@@ -212,6 +242,9 @@ cp_hardlink() {
     printf "${COL_YELLOW}Hardlinking to original: ${COL_RESET}%%s\n" "$1"
     if original_check "$1" "$2"; then
         if [ -z "$DO_DRY_RUN" ]; then
+            if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                touch -r "$(dirname "$1")" -- "$STAMPFILE"
+            fi
             # replace duplicate with hardlink
             mv -- "$1" "$1.temp"
             if ln "$2" "$1"; then
@@ -220,30 +253,57 @@ cp_hardlink() {
                # Failed to link file, move back:
                 mv -- "$1.temp" "$1"
             fi
+            if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                # restore parent mtime if we saved it
+                touch -r "$STAMPFILE" -- "$(dirname "$1")"
+            fi
         fi
     fi
 }
 
 cp_reflink() {
-    if [ -d "$1" ]; then
-        # for duplicate dir's, can't clone so use symlink
-        cp_symlink "$@"
-        return $?
-    fi
     print_progress_prefix
-    # reflink $1 to $2's data, preserving $1's  mtime
+    # reflink $1 to $2's data, preserving $1's mtime
     printf "${COL_YELLOW}Reflinking to original: ${COL_RESET}%%s\n" "$1"
     if original_check "$1" "$2"; then
         if [ -z "$DO_DRY_RUN" ]; then
-            if [ -z "$STAMPFILE2" ]; then
-                STAMPFILE2=$(mktemp "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp")
-            fi
-            touch -mr "$1" -- "$STAMPFILE2"
-            if [ -d "$1" ]; then
+            if [ -d "$1" ] && check_hierarchy "$1" "$2"; then
+                # Reflinking a directory with the same hierarchy. We can preserve the attributes of
+                # the files recursively by doing a `cp --attributes-only` to a temporary directory.
+                STAMPDIR2="$(mktemp -d "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp.d")"
+                cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$1" "$STAMPDIR2"
+                # $STAMPDIR2 will probably be on tmpfs, which does not support user xattrs.
+                # Thus, if the hierarchies are actually equal, we can simply skip deleting originals
+                # and let user xattrs stay in place throughout the whole operation.
+                cp -dR --reflink=always --no-preserve=xattr --no-target-directory -- "$2" "$1"
+                cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$STAMPDIR2" "$1"
+                rm -rf -- "$STAMPDIR2"
+                STAMPDIR2=
+                # In the same vein, we don't have to preserve the parent mtime because we never
+                # actually modify the parent directory.
+            elif [ -d "$1" ]; then
+                # Reflinking a directory, but the hierarchy is different (no `--honor-dir-layout`).
+                # We will have to delete the duplicate directory, thus changing parent mtime.
+                # Take care of preserving parent mtime if requested
+                if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                    touch -r "$(dirname "$1")" -- "$STAMPFILE"
+                fi
                 rm -rf -- "$1"
+                # The hierarchy is different, so there's no point preserving any of the attributes,
+                # if they're incompatible between the two, the situation is screwed anyway
+                cp --archive --reflink=always --no-preserve=xattr --no-target-directory -- "$2" "$1"
+                if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
+                    # restore parent mtime if we saved it
+                    touch -r "$STAMPFILE" -- "$(dirname "$1")"
+                fi
+            else
+                if [ -z "$STAMPFILE2" ]; then
+                    STAMPFILE2=$(mktemp "${TMPDIR:-/tmp}/rmlint.XXXXXXXX.stamp")
+                fi
+                cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$1" "$STAMPFILE2"
+                cp -dR --reflink=always --no-target-directory -- "$2" "$1"
+                cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$STAMPFILE2" "$1"
             fi
-            cp --archive --reflink=always -- "$2" "$1"
-            touch -mr "$STAMPFILE2" -- "$1"
         fi
     fi
 }
