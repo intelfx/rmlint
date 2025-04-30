@@ -170,12 +170,12 @@ check_for_equality() {
 }
 
 original_check() {
-    if [ ! -e "$2" ]; then
+    if [ ! -e "$2" ] && [ ! -L "$2" ]; then
         printf '%%s\n' "${COL_RED}^^^^^^ Error: original has disappeared - cancelling...${COL_RESET}"
         return 1
     fi
 
-    if [ ! -e "$1" ]; then
+    if [ ! -e "$1" ] && [ ! -L "$1" ]; then
         printf '%%s\n' "${COL_RED}^^^^^^ Error: duplicate has disappeared - cancelling...${COL_RESET}"
         return 1
     fi
