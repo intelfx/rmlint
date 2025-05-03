@@ -286,7 +286,11 @@ def check_btrfs_h(context):
     rc = 1
     if tests.CheckHeader(
         context, 'linux/btrfs.h',
-        header='#include <stdlib.h>\n#include <sys/ioctl.h>'
+        header='\n'.join((
+            '#include <stdlib.h>',
+            '#include <sys/ioctl.h>',
+            '',
+        )),
     ):
         rc = 0
 
