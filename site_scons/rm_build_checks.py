@@ -228,7 +228,13 @@ def check_xattr(context):
         rc = 0
     else:
         for func in ('getxattr', 'setxattr', 'removexattr', 'listxattr'):
-            if tests.CheckFunc(context, func):
+            if tests.CheckDeclaration(
+                context, func,
+                includes='\n'.join((
+                    '#include <sys/types.h>',
+                    '#include <sys/xattr.h>',
+                )),
+            ):
                 rc = 0
                 break
 
@@ -247,7 +253,13 @@ def check_lxattr(context):
         rc = 0
     else:
         for func in ('lgetxattr', 'lsetxattr', 'lremovexattr', 'llistxattr'):
-            if tests.CheckFunc(context, func):
+            if tests.CheckDeclaration(
+                context, func,
+                includes='\n'.join((
+                    '#include <sys/types.h>',
+                    '#include <sys/xattr.h>',
+                )),
+            ):
                 rc = 0
                 break
 
