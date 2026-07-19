@@ -709,7 +709,7 @@ static bool rm_mounts_is_ramdisk(const char *fs_type) {
 typedef struct RmMountEntry {
     char *fsname; /* name of mounted file system */
     char *dir;    /* file system path prefix     */
-    char *type;   /* Type of fs: ufs, nfs, etc   */
+    char *fstype; /* Type of fs: ufs, nfs, etc   */
 } RmMountEntry;
 
 typedef struct RmMountEntries {
@@ -725,7 +725,7 @@ static void rm_mount_list_close(RmMountEntries *self) {
         RmMountEntry *entry = iter->data;
         g_free(entry->fsname);
         g_free(entry->dir);
-        g_free(entry->type);
+        g_free(entry->fstype);
         g_slice_free(RmMountEntry, entry);
     }
 
@@ -774,7 +774,7 @@ static RmMountEntries *rm_mount_list_open(RmMountTable *table) {
 
         wrap_entry->fsname = g_strdup(mnt_fs_get_source(fs));
         wrap_entry->dir = g_strdup(mnt_fs_get_target(fs));
-        wrap_entry->type = g_strdup(mnt_fs_get_fstype(fs));
+        wrap_entry->fstype = g_strdup(mnt_fs_get_fstype(fs));
 
         self->entries = g_list_prepend(self->entries, wrap_entry);
     }
@@ -810,7 +810,7 @@ static RmMountEntries *rm_mount_list_open(RmMountTable *table) {
 
         const struct RmEvilFs *evilfs_found = NULL;
         for(int i = 0; evilfs_types[i].name && !evilfs_found; ++i) {
-            if(strcmp(evilfs_types[i].name, wrap_entry->type) == 0) {
+            if(strcmp(evilfs_types[i].name, wrap_entry->fstype) == 0) {
                 evilfs_found = &evilfs_types[i];
             }
         }
@@ -840,12 +840,12 @@ static RmMountEntries *rm_mount_list_open(RmMountTable *table) {
                   evilfs_found->name, wrap_entry->dir, (unsigned)dir_stat.st_dev);
         }
 
-        if(fs_supports_reflinks(wrap_entry->type, wrap_entry->dir)) {
+        if(fs_supports_reflinks(wrap_entry->fstype, wrap_entry->dir)) {
             RmStat dir_stat;
             if(rm_sys_stat(wrap_entry->dir, &dir_stat) == 0) {
                 g_hash_table_insert(table->reflinkfs_table,
                                     GUINT_TO_POINTER(dir_stat.st_dev),
-                                    wrap_entry->type);
+                                    wrap_entry->fstype);
                 rm_log_debug_line("Filesystem %s: reflink capable", wrap_entry->dir);
                 continue;
             }
