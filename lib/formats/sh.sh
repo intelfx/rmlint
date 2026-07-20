@@ -337,6 +337,17 @@ skip_inline() {
     printf "${COL_BLUE}Leaving as-is (has inline extents): ${COL_RESET}%%s\n" "$1"
 }
 
+cannot_hardlink() {
+    print_progress_prefix
+    printf "${COL_RED}Leaving as-is (cannot hardlink): ${COL_RESET}%%s\n" "$1"
+}
+
+cannot_reflink() {
+    print_progress_prefix
+    printf "${COL_RED}Leaving as-is (cannot reflink): ${COL_RESET}%%s\n" "$1"
+}
+
+
 user_command() {
     print_progress_prefix
 
