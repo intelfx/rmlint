@@ -2,7 +2,7 @@
 set -eu
 
 PROGRESS_CURR=0
-PROGRESS_TOTAL=0                           
+PROGRESS_TOTAL=0
 
 # This file was autowritten by rmlint
 # rmlint was executed from: %s
@@ -295,7 +295,7 @@ cp_reflink() {
                 # $STAMPDIR2 will probably be on tmpfs, which does not support user xattrs.
                 # Thus, if the hierarchies are actually equal, we can simply skip deleting originals
                 # and let user xattrs stay in place throughout the whole operation.
-                cp -dR --reflink=always --no-preserve=xattr --no-target-directory -- "$2" "$1"
+                cp -dR --reflink=auto --no-preserve=xattr --no-target-directory -- "$2" "$1"
                 cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$STAMPDIR2" "$1"
                 rm -rf -- "$STAMPDIR2"
                 STAMPDIR2=
@@ -311,7 +311,7 @@ cp_reflink() {
                 rm -rf -- "$1"
                 # The hierarchy is different, so there's no point preserving any of the attributes,
                 # if they're incompatible between the two, the situation is screwed anyway
-                cp --archive --reflink=always --no-preserve=xattr --no-target-directory -- "$2" "$1"
+                cp --archive --reflink=auto --no-preserve=xattr --no-target-directory -- "$2" "$1"
                 if [ -n "$DO_KEEP_DIR_TIMESTAMPS" ]; then
                     # restore parent mtime if we saved it
                     touch -r "$STAMPFILE" -- "$(dirname "$1")"
@@ -321,7 +321,7 @@ cp_reflink() {
                     STAMPFILE2=$(mktemp "${TMPDIR:-/tmp}/rmlint.stamp.XXXXXXXX")
                 fi
                 cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$1" "$STAMPFILE2"
-                cp -dR --reflink=always --no-target-directory -- "$2" "$1"
+                cp -dR --reflink=auto --no-target-directory -- "$2" "$1"
                 cp --archive --attributes-only --no-preserve=xattr --no-target-directory -- "$STAMPFILE2" "$1"
             fi
         fi
