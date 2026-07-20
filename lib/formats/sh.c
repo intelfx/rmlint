@@ -107,7 +107,6 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
     case RM_LINK_WRONG_SIZE:
     case RM_LINK_PATH_DOUBLE:
     case RM_LINK_ERROR:
-    case RM_LINK_XDEV:
     case RM_LINK_SYMLINK:
     case RM_LINK_BOTH_EMPTY:
     case RM_LINK_DIR:
@@ -115,6 +114,7 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
         return FALSE;
     case RM_LINK_MAYBE_REFLINK: /* delalloc extents; the dedupe ioctl handles them */
     case RM_LINK_INLINE_EXTENTS: /* XXX skipping this is wrong, because inline tails would prevent reflinking */
+    case RM_LINK_XDEV: /* XXX skipping this is wrong, because XDEV check is incongruous with reflinkability; this is better checked by rm_mounts_can_reflink() above */
     case RM_LINK_NONE:
         *out = g_strdup_printf("clone         '%s' '%s'", dupe_escaped, orig_escaped);
         return TRUE;
@@ -145,7 +145,6 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     case RM_LINK_NOT_FILE:
     case RM_LINK_WRONG_SIZE:
     case RM_LINK_PATH_DOUBLE:
-    case RM_LINK_XDEV:
     case RM_LINK_ERROR:
     case RM_LINK_BOTH_EMPTY:
     /* this will only happen with --see-symlinks, in which case there is nothing to do here */
@@ -154,6 +153,7 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
         return FALSE;
     case RM_LINK_MAYBE_REFLINK:
     case RM_LINK_INLINE_EXTENTS: /* XXX skipping this is wrong, because inline tails would prevent reflinking */
+    case RM_LINK_XDEV: /* XXX skipping this is wrong, because XDEV check is incongruous with reflinkability; this is better checked by rm_mounts_can_reflink() above */
     case RM_LINK_DIR:
     case RM_LINK_NONE:
         *out = g_strdup_printf("cp_reflink    '%s' '%s'", dupe_escaped, orig_escaped);
