@@ -86,7 +86,8 @@ static bool rm_sh_emit_handler_clone(RmFmtHandlerShScript *self, char **out, RmF
     }
 
     if (!rm_mounts_can_reflink(self->session->mounts, rm_file_dev(file), rm_file_dev(self->last_original)) ) {
-        return false;
+        *out = g_strdup_printf("cannot_reflink '%s' '%s'", dupe_escaped, orig_escaped);
+        return true;
     }
 
     /* Needs to have at least kernel 4.2 */
@@ -130,7 +131,8 @@ static bool rm_sh_emit_handler_reflink(RmFmtHandlerShScript *self, char **out, R
     }
 
     if(!rm_mounts_can_reflink(self->session->mounts, rm_file_dev(self->last_original), rm_file_dev(file))) {
-        return false;
+        *out = g_strdup_printf("cannot_reflink '%s' '%s'", dupe_escaped, orig_escaped);
+        return true;
     }
 
     int link_type = rm_util_link_type(dupe_path, orig_path, self->session->cfg->build_fiemap);
@@ -174,8 +176,12 @@ static bool rm_sh_emit_handler_symlink(RmFmtHandlerShScript *self, char **out, _
 }
 
 static bool rm_sh_emit_handler_hardlink(RmFmtHandlerShScript *self, char **out, _UNUSED RmFile *file, _UNUSED char *dupe_path, _UNUSED char *orig_path, char *dupe_escaped, char *orig_escaped) {
-    if(!self->allow_hardlink || rm_file_dev(self->last_original) != rm_file_dev(file)) {
+    if(!self->allow_hardlink) {
         return false;
+    }
+    if(rm_file_dev(self->last_original) != rm_file_dev(file)) {
+        *out = g_strdup_printf("cannot_hardlink '%s' '%s'", dupe_escaped, orig_escaped);
+        return true;
     }
 
     if (self->last_original && rm_file_inode(self->last_original) == rm_file_inode(file)) {
