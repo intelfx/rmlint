@@ -1350,6 +1350,10 @@ static struct libmnt_fs *rm_util_get_fsinfo(const char *path, struct libmnt_tabl
 
 /* test if two file paths are on the same device (even if on different
  * mountpoints)
+ *
+ * This check is used as a source for RM_LINK_XDEV.
+ *
+ * FIXME: this check is incongruent with rm_mounts_can_reflink(); neither check is a superset of the other.
  */
 static gboolean rm_util_same_device(const char *path1, const char *path2) {
     struct libmnt_table *mount_table = mnt_new_table();
