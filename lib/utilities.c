@@ -638,15 +638,17 @@ typedef struct RmDiskInfo {
 typedef struct RmPartitionInfo {
     char *name;
     char *fsname;
+    char *fstype;
     dev_t disk;
 } RmPartitionInfo;
 
 #if RM_MOUNTTABLE_IS_USABLE
 
-RmPartitionInfo *rm_part_info_new(char *name, char *fsname, dev_t disk) {
+RmPartitionInfo *rm_part_info_new(char *name, char *fsname, char *fstype, dev_t disk) {
     RmPartitionInfo *self = g_new0(RmPartitionInfo, 1);
     self->name = g_strdup(name);
     self->fsname = g_strdup(fsname);
+    self->fstype = g_strdup(fstype);
     self->disk = disk;
     return self;
 }
@@ -654,6 +656,7 @@ RmPartitionInfo *rm_part_info_new(char *name, char *fsname, dev_t disk) {
 void rm_part_info_free(RmPartitionInfo *self) {
     g_free(self->name);
     g_free(self->fsname);
+    g_free(self->fstype);
     g_free(self);
 }
 
@@ -953,7 +956,7 @@ static bool rm_mounts_create_tables(RmMountTable *self, bool force_fiemap) {
             }
             g_hash_table_insert(self->part_table,
                                 GUINT_TO_POINTER(stat_buf_folder.st_dev),
-                                rm_part_info_new(entry->dir, entry->fsname, whole_disk));
+                                rm_part_info_new(entry->dir, entry->fsname, entry->fstype, whole_disk));
         } else {
             rm_log_debug_line("Skipping duplicate mount entry for dir %s dev %02u:%02u",
                               entry->dir, major(stat_buf_folder.st_dev),
@@ -965,7 +968,7 @@ static bool rm_mounts_create_tables(RmMountTable *self, bool force_fiemap) {
         if(!g_hash_table_contains(self->part_table, GINT_TO_POINTER(whole_disk))) {
             g_hash_table_insert(self->part_table,
                                 GUINT_TO_POINTER(whole_disk),
-                                rm_part_info_new(entry->dir, entry->fsname, whole_disk));
+                                rm_part_info_new(entry->dir, entry->fsname, entry->fstype, whole_disk));
         }
 
         if(!g_hash_table_contains(self->disk_table, GINT_TO_POINTER(whole_disk))) {
@@ -1073,7 +1076,7 @@ dev_t rm_mounts_get_disk_id(RmMountTable *self, _UNUSED dev_t dev,
                                   " - looks like subvolume %s on volume " GREEN
                                   "%s" RESET,
                                   path, prev, parent_part->name);
-                part = rm_part_info_new(prev, parent_part->fsname, parent_part->disk);
+                part = rm_part_info_new(prev, parent_part->fsname, parent_part->fstype, parent_part->disk);
                 g_hash_table_insert(self->part_table, GINT_TO_POINTER(dev), part);
                 /* if parent_part is in the reflinkfs_table, add dev as well */
                 char *parent_type = g_hash_table_lookup(
