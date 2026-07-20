@@ -1141,7 +1141,24 @@ bool rm_mounts_can_reflink(RmMountTable *self, dev_t source, dev_t dest) {
                 g_hash_table_lookup(self->part_table, GINT_TO_POINTER(dest));
             g_assert(source_part);
             g_assert(dest_part);
-            return (strcmp(source_part->fsname, dest_part->fsname) == 0);
+            // files on different filesystems cannot ever be reflinked
+            if (strcmp(source_part->fstype, dest_part->fstype) != 0)
+                return false;
+            // files on the same filesystem (same superblock) can always be reflinked
+            if (strcmp(source_part->fsname, dest_part->fsname) == 0)
+                return true;
+            // zfs is a bit of a special case.
+            // ->fsname is the dataset name; assume that files on the same *pool* can be reflinked.
+            // rationale: ioctl(FICLONE) might not work across datasets, but copy_file_range() does,
+            // and coreutils' cp(1) is smart enough to use it.
+            // For now, assume that all datasets are otherwise compatible (wrt. recordsize etc.).
+            if (strcmp(source_part->fstype, "zfs") == 0) {
+                ssize_t pos1 = strchrnul(source_part->fsname, '/') - source_part->fsname;
+                ssize_t pos2 = strchrnul(dest_part->fsname, '/') - dest_part->fsname;
+                if (pos1 == pos2 && strncmp(source_part->fsname, dest_part->fsname, pos1) == 0)
+                    return true;
+            }
+            return false;
         }
     } else {
         return false;
