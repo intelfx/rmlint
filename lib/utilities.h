@@ -97,7 +97,11 @@ WARN_UNUSED_RESULT static inline int rm_sys_lstat(const char *path, RmStat *buf)
 }
 
 static inline int rm_sys_open(const char *path, int mode) {
-    return open(path, mode, (S_IRUSR | S_IWUSR));
+    /*
+     * rmlint is an "indexing or backup program", all of our file accesses
+     * fit the criteria for O_NOATIME -- use it always, unconditionally
+     */
+    return open(path, mode | O_NOATIME, (S_IRUSR | S_IWUSR));
 }
 
 static inline gdouble rm_sys_stat_mtime_float(RmStat *stat) {
